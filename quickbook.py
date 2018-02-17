@@ -1,14 +1,10 @@
 # Automates the process of booking slots at the club
 
-import datetime
+import datetime, io, pycurl, urllib.parse
 from time import sleep
-import pycurl
-import urllib.parse
-import io
 from bs4 import BeautifulSoup
 
 import credentials
-
 login_url   = credentials.base_url + 'LoginE.aspx'
 booking_url = credentials.base_url + 'BookingNewAllE.aspx?ClubCD=KGPA&ClubName=KELAB%20GOLF%20PERKHIDMATAN%20AWAM'
 logout_url  = credentials.base_url + 'LogoutE.aspx'
@@ -18,7 +14,7 @@ days_ahead     = 8      # slots appear at 22:00 MYT (14:00 GMT) for 8 days ahead
 course_list_id = 'lst3' # lst1 = Hills, lst2 = Lakes, lst3= Forest
 chosen_slot    = 0      # indicates the list option, zero-indexed. eg. 0 = 7:15, 1 = 7:22, etc
 max_attempts   = 2
-seconds_between_attempts = 1
+seconds_between_attempts = 0
 
 def add_state(postfields, raw_html):
     """ strips asp.net tags (__VIEWSTATE, __EVENTVALIDATION etc) from raw HTML
@@ -45,13 +41,20 @@ def call(url, **kwargs):
     p.perform()
     return buffer.getvalue()
 
+def log(msg, **kwargs):
+    """ controls output to screen, adding timing details where relevant
+    """
+    timestring = "\033[90m{}\033[0m  ".format(datetime.datetime.now().strftime('%H:%M:%S.%f'))
+    preamble = timestring if 'end' in kwargs else ''
+    print(preamble+msg, **kwargs)
+
 p = pycurl.Curl()
 p.setopt(pycurl.FOLLOWLOCATION, 1)
 p.setopt(pycurl.COOKIEFILE, './cookie.txt')
 p.setopt(pycurl.COOKIEJAR, './cookie.txt')
 
 # Get login page
-print("logging in...", end='')
+log("logging in...", end='')
 raw_html = call(login_url)
 # Post login info
 postfields = {
@@ -61,12 +64,12 @@ postfields = {
     }
 add_state(postfields, raw_html)
 call(login_url, postfields=postfields)
-print("complete")
+log("complete")
 
 # Get booking page
 booking_date = datetime.date.today() + datetime.timedelta(days=days_ahead)
 date_string  = booking_date.strftime("%Y/%m/%d")
-print("finding booking slots on {}...".format(date_string))
+log("finding booking slots on {}...".format(date_string), end="\n")
 raw_html = call(booking_url)
 
 # Post for newest slots
@@ -86,24 +89,24 @@ attempts = 0
 tag_slot_option = None
 while True:
     attempts += 1
-    print(" attempt {}...".format(attempts), end='')
+    log(" attempt {}...".format(attempts), end='')
     raw_html = call(booking_url, postfields=postfields)
     soup = BeautifulSoup(raw_html, 'html.parser')
     if soup.find(id=course_list_id) is not None:
         tag_slot_option = soup.find(id=course_list_id).find_all("option")[chosen_slot]
-        print(" found!")
+        log(" found!")
         break
-    if attempts > max_attempts:
-        print(" not found, stopping")
+    if attempts >= max_attempts:
+        log(" not found, stopping")
         break
-    print(" not found, retrying")
+    log(" not found, retrying")
     sleep(seconds_between_attempts)
 
 if tag_slot_option is not None:
-    print(" found slot {}".format(tag_slot_option.string))
+    log(" found slot {}".format(tag_slot_option.string))
 
     # Post to book desired slots
-    print("Attempting to book...", end='')
+    log("Attempting to book...", end='')
     postfields.update({
         course_list_id: tag_slot_option['value'],
         'butChange': 'Confirm and Booking',
@@ -117,10 +120,10 @@ if tag_slot_option is not None:
         import re
         message = re.search(r'Your booking is confirmed. The reference number is \w+', raw_html.decode('utf-8'), re.M).group()
 
-    print(" booking submitted\nServer's response: \"{}\"\n\n".format(message))
+    log(" booking submitted\nServer's response: \"{}\"\n\n".format(message))
 
 else:
-    print("\nfailed to load slots to book\n")
+    log("\nfailed to load slots to book\n")
 
 # Logout
 call(logout_url)
