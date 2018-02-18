@@ -1,6 +1,6 @@
 # Automates the process of booking slots at the club
 
-import datetime, io, pycurl, urllib.parse
+import os, datetime, io, pycurl, urllib.parse
 from time import sleep
 from bs4 import BeautifulSoup
 
@@ -21,10 +21,12 @@ seconds_between_attempts = 0
 def main():
     """ Attempts to book first available slot as soon as possible by polling
     """
+    cookie_file_path = './cookie.txt'
+    os.remove(cookie_file_path)
     p = pycurl.Curl()
     p.setopt(pycurl.FOLLOWLOCATION, 1)
-    p.setopt(pycurl.COOKIEFILE, './cookie.txt')
-    p.setopt(pycurl.COOKIEJAR, './cookie.txt')
+    p.setopt(pycurl.COOKIEFILE, cookie_file_path)
+    p.setopt(pycurl.COOKIEJAR, cookie_file_path)
 
     # Get login page
     log("logging in...", end='')
@@ -106,6 +108,7 @@ def main():
     # Logout
     call(p, logout_url)
     p.close()
+    os.remove(cookie_file_path)
 
 def add_state(postfields, raw_html):
     """ strips asp.net tags (__VIEWSTATE, __EVENTVALIDATION etc) from raw HTML
