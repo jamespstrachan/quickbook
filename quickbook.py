@@ -9,13 +9,13 @@ login_url   = credentials.base_url + 'LoginE.aspx'
 booking_url = credentials.base_url + 'BookingNewAllE.aspx?ClubCD=KGPA&ClubName=KELAB%20GOLF%20PERKHIDMATAN%20AWAM'
 logout_url  = credentials.base_url + 'LogoutE.aspx'
 
-days_ahead     = 7      # slots appear at 22:00 MYT (14:00 GMT) for 8 days ahead
+days_ahead     = 8      # slots appear at 22:00 MYT (14:00 GMT) for 8 days ahead
                         # (eg Friday 10pm is when slots appear for next Saturday)
 course_list_ids = ['lst3', 'lst2']
                         # in descending order of preference
                         # lst1 = Hills, lst2 = Lakes, lst3 = Forest
 chosen_slot    = 0      # indicates the list option, zero-indexed. eg. 0 = 7:15, 1 = 7:22, etc
-max_attempts   = 2
+max_attempts   = 30
 seconds_between_attempts = 0
 
 def main():
