@@ -4,11 +4,6 @@ import os, datetime, io, pycurl, urllib.parse
 from time import sleep
 from bs4 import BeautifulSoup
 
-import credentials
-login_url   = credentials.base_url + 'LoginE.aspx'
-booking_url = credentials.base_url + 'BookingNewAllE.aspx?ClubCD=KGPA&ClubName=KELAB%20GOLF%20PERKHIDMATAN%20AWAM'
-logout_url  = credentials.base_url + 'LogoutE.aspx'
-
 days_ahead     = 8      # slots appear at 22:00 MYT (14:00 GMT) for 8 days ahead
                         # (eg Friday 10pm is when slots appear for next Saturday)
 course_list_ids = ['lst3', 'lst2']
@@ -21,8 +16,15 @@ seconds_between_attempts = 0
 def main():
     """ Attempts to book first available slot as soon as possible by polling
     """
+    check_credentials()
+    import credentials
+    login_url   = credentials.base_url + 'LoginE.aspx'
+    booking_url = credentials.base_url + 'BookingNewAllE.aspx?ClubCD=KGPA&ClubName=KELAB%20GOLF%20PERKHIDMATAN%20AWAM'
+    logout_url  = credentials.base_url + 'LogoutE.aspx'
+
     cookie_file_path = './cookie.txt'
-    os.remove(cookie_file_path)
+    if os.path.isfile(cookie_file_path) == True:
+        os.remove(cookie_file_path)
     p = pycurl.Curl()
     p.setopt(pycurl.FOLLOWLOCATION, 1)
     p.setopt(pycurl.COOKIEFILE, cookie_file_path)
@@ -109,6 +111,26 @@ def main():
     call(p, logout_url)
     p.close()
     os.remove(cookie_file_path)
+
+def check_credentials():
+    """ Loads credentials if present or requests from user
+    """
+    credentials_path = "credentials.py"
+    if os.path.isfile(credentials_path) == False:
+        log("Setup required, no credentials found")
+        username = input("  username:")
+        password = input("  password:")
+        base_url = input("  base url:")
+        fh = open(credentials_path, "w")
+        lines = [
+            "# application credentials",
+            "username = '{}'".format(username),
+            "password = '{}'".format(password),
+            "base_url = '{}'".format(base_url),
+            ]
+        fh.write("\n".join(lines))
+        fh.close()
+        log("Setup complete\n")
 
 def add_state(postfields, raw_html):
     """ strips asp.net tags (__VIEWSTATE, __EVENTVALIDATION etc) from raw HTML
