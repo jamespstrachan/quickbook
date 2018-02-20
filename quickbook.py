@@ -16,6 +16,8 @@ seconds_between_attempts = 0
 def main():
     """ Attempts to book first available slot as soon as possible by polling
     """
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
     check_credentials()
     import credentials
     login_url   = credentials.base_url + 'LoginE.aspx'

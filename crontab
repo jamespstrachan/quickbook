@@ -1,0 +1,2 @@
+MAILTO=jamespstrachan@gmail.com
+0 14 * * * /usr/local/bin/python3.4 /usr/src/app/quickbook.py
