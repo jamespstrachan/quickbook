@@ -11,7 +11,6 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 COPY . .
 
-RUN service cron start
 RUN crontab crontab
 
-CMD ["cron -f"]
+CMD ["cron", "-f"]
