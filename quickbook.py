@@ -45,14 +45,12 @@ def main():
     call(p, login_url, postfields=postfields)
     log("complete")
 
-    # Get booking page
+    log("delaying till start of next minute", end="\n")
+    sleep(60 - datetime.datetime.now().second)
+
     booking_date = datetime.date.today() + datetime.timedelta(days=days_ahead)
     date_string  = booking_date.strftime("%Y/%m/%d")
-    log("finding booking slots on {}...".format(date_string), end="\n")
-    raw_html = call(p, booking_url)
-
-    # Post for newest slots
-    postfields = {
+    default_postfields = {
         'ddlClub' : '8',
         'ddldate' : date_string,
         'ddlH1'   : '7',
@@ -62,13 +60,20 @@ def main():
         'ddlM2'   : '00',
         'ddlAMPM2': 'AM',
     }
-    add_state(postfields, raw_html)
-
+    log("finding booking slots on {}".format(date_string), end="\n")
     attempts = 0
     tag_slot_option = None
     while True:
         attempts += 1
         log(" attempt {}...".format(attempts), end='')
+
+        # List available booking days
+        raw_html = call(p, booking_url)
+
+        postfields = default_postfields
+        add_state(postfields, raw_html)
+
+        # List available booking slots on chosen day
         raw_html = call(p, booking_url, postfields=postfields)
         soup = BeautifulSoup(raw_html, 'html.parser')
         for course_list_id in course_list_ids:
@@ -149,6 +154,7 @@ def call(conn, url, **kwargs):
         returns the response body to our GET or POST request
     """
     buffer = io.BytesIO()
+    fields = ''
     conn.setopt(pycurl.WRITEDATA, buffer)
     conn.setopt(pycurl.POST, 0)
     if 'postfields' in kwargs:
@@ -157,7 +163,15 @@ def call(conn, url, **kwargs):
         conn.setopt(pycurl.POSTFIELDS, fields)
     conn.setopt(pycurl.URL, url)
     conn.perform()
-    return buffer.getvalue()
+    response_body = buffer.getvalue()
+    fh = open("html_log.txt", "a")
+    fh.write(str(datetime.datetime.now())+"\n")
+    fh.write("{} ? {}\n".format(url, fields))
+    fh.write(str(response_body)+"\n\n")
+    fh.close()
+    if str(response_body).find("Invalid postback or callback argument") > -1:
+        log(" !Error response from server! ", end='')
+    return response_body
 
 def log(msg, **kwargs):
     """ controls output to screen, adding timing details where relevant
