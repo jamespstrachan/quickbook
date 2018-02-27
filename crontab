@@ -1,2 +1,2 @@
 MAILTO=jamespstrachan@gmail.com
-59 13 * * * /usr/local/bin/python3.4 /usr/src/app/quickbook.py
+59 13 * * 0-4 /usr/local/bin/python3.4 /usr/src/app/quickbook.py 1>> /usr/src/app/cronlog.txt 2>> /usr/src/app/cronerr.txt

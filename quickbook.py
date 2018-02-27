@@ -32,6 +32,7 @@ def main():
     p.setopt(pycurl.COOKIEFILE, cookie_file_path)
     p.setopt(pycurl.COOKIEJAR, cookie_file_path)
 
+    print(datetime.datetime.now().strftime('%c'))
     # Get login page
     log("logging in...", end='')
     raw_html = call(p, login_url)
